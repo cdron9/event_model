@@ -1,0 +1,24 @@
+EVENT MODEL - TODO
+==================
+
+1. Add sliders for AVG_SPEND_PP and FLOOR_SPEND_PP
+   - lets you stress test drink assumptions live
+   - FLOOR_SPEND_PP is the most sensitive variable in the model
+
+2. Annotate break-even point on chart
+   - automatically label where each curve crosses zero
+   - shows minimum viable attendance at a glance
+
+3. Model negative correlation between ticket price and bar spend
+   - avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
+   - add sensitivity as a slider
+   - see notes on budget substitution in README
+
+4. Add probability distribution for spend per person
+   - replace flat avg/floor with a bell curve
+   - gives a more realistic spread of outcomes
+
+5. Write README
+   - document the model logic
+   - explain exposure function
+   - note model limitations (especially ticket price / spend correlation)
