@@ -33,7 +33,7 @@ tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
 
 ## net position = ticket revenue - venue cost - bar exposure
 ## target is net >= 0, no profit needed
-TICKET_PRICE = 10
+TICKET_PRICE = 15
 
 net_avgnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_avgnight
 net_badnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_badnight
@@ -41,14 +41,31 @@ net_badnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_badnight
 ## plot
 fig, ax = plt.subplots()
 
-ax.plot(acc_guests, net_avgnight, label='Net position - avg night')
-ax.plot(acc_guests, net_badnight, label='Net position - bad night')
-ax.axhline(0, color='black', linewidth=0.8, linestyle='--')
+lines = [
+    ax.plot(acc_guests, net_avgnight, label='Net position - avg night')[0],
+    ax.plot(acc_guests, net_badnight, label='Net position - bad night')[0]
+]
 
+ax.axhline(0, color='black', linewidth=0.8, linestyle='--')
 ax.set_xlabel('Number of guests')
 ax.set_ylabel('Net Position (£)')
 ax.set_title('Net Position vs Attendance')
 ax.legend()
 ax.set_ylim(-8000, 8000)
+
+## slider
+plt.subplots_adjust(bottom=0.25)
+ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
+slider = Slider(ax_slider, 'Ticket Price (£)', 1, 30, valinit=TICKET_PRICE)
+
+def update(val):
+    ticket_price = slider.val
+    net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
+    net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
+    lines[0].set_ydata(net_avgnight)
+    lines[1].set_ydata(net_badnight)
+    fig.canvas.draw_idle()
+
+slider.on_changed(update)
 
 plt.show()
