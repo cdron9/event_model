@@ -26,9 +26,15 @@ FLOOR_SPEND_PP = 4.20
 ## we hit floor at above max attendance (VERY BAD)
 ## we hit avg around 450ish 
 
-print(min_spend_pp[49])
-print(min_spend_pp[99])
-print(min_spend_pp[149])
-print(min_spend_pp[249])
-print(min_spend_pp[399])
-print(min_spend_pp[499])
+def exposure(min_bar_spend, avg_spend_pp, acc_guests):
+    exposure = np.maximum(0, min_bar_spend - (avg_spend_pp * acc_guests))
+    return exposure
+
+tab_cost_avgnight = exposure(MIN_BAR_SPEND, AVG_SPEND_PP, acc_guests)
+tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
+
+print(f"50 guests:  £{tab_cost_avgnight[49]:.2f}")
+print(f"100 guests: £{tab_cost_avgnight[99]:.2f}")
+print(f"200 guests: £{tab_cost_avgnight[199]:.2f}")
+print(f"450 guests: £{tab_cost_avgnight[449]:.2f}")
+print(f"500 guests: £{tab_cost_avgnight[499]:.2f}")
