@@ -58,6 +58,17 @@ plt.subplots_adjust(bottom=0.25)
 ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
 slider = Slider(ax_slider, 'Ticket Price (£)', 1, 30, valinit=TICKET_PRICE)
 
+## slider for avg and floor spend 
+## Floor spend 
+plt.subplots_adjust(bottom=0.15)
+ax_slider_min_spend = plt.axes([0.2, 0.2, 0.6, 0.03])
+slider_min_spend = Slider(ax_slider_min_spend, 'Floor Spend Per-Person (£)', 4.50, 10, valinit=FLOOR_SPEND_PP)
+
+## Avg spend
+plt.subplots_adjust(bottom=0.05)
+ax_slider_avg_spend = plt.axes([0.2, 0.3, 0.6, 0.03])
+slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10, 20, valinit=AVG_SPEND_PP )
+
 def update(val):
     ticket_price = slider.val
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
