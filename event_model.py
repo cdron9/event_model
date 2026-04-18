@@ -4,6 +4,7 @@ from matplotlib.widgets import Slider
 
 MAX_GUESTS = 500 
 MIN_BAR_SPEND = 6000
+VENUE_COST = 1500
 
 ## guest variables
 acc_guests = np.arange(1, 501) 
@@ -34,8 +35,8 @@ tab_cost_avgnight = exposure(MIN_BAR_SPEND, AVG_SPEND_PP, acc_guests)
 tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
 
 ## min ticket price is set to make exposure == 0, we could adjust so there is some exposure just set to a controllable amount. 
-min_ticket_price_avgnight = tab_cost_avgnight / acc_guests
-min_ticket_price_badnight = tab_cost_badnight / acc_guests
+min_ticket_price_avgnight = (tab_cost_avgnight * VENUE_COST) / acc_guests
+min_ticket_price_badnight = (tab_cost_badnight * VENUE_COST) / acc_guests
 
 ## plot via matplotlib. 
 fig, ax = plt.subplots()
