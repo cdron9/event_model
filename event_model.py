@@ -71,6 +71,10 @@ slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 
 
 def update(val):
     ticket_price = slider.val
+    min_spend = slider_min_spend.val
+    avg_spend = slider_avg_spend.val 
+    tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend, acc_guests)
+    tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend, acc_guests)
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
     net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
     lines[0].set_ydata(net_avgnight)
@@ -78,5 +82,7 @@ def update(val):
     fig.canvas.draw_idle()
 
 slider.on_changed(update)
+slider_min_spend.on_changed(update)
+slider_avg_spend.on_changed(update)
 
 plt.show()

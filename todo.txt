@@ -1,10 +1,6 @@
 EVENT MODEL - TODO
 ==================
 
-1. Add sliders for AVG_SPEND_PP and FLOOR_SPEND_PP
-   - lets you stress test drink assumptions live
-   - FLOOR_SPEND_PP is the most sensitive variable in the model
-
 2. Annotate break-even point on chart
    - automatically label where each curve crosses zero
    - shows minimum viable attendance at a glance
