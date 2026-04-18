@@ -33,8 +33,21 @@ def exposure(min_bar_spend, avg_spend_pp, acc_guests):
 tab_cost_avgnight = exposure(MIN_BAR_SPEND, AVG_SPEND_PP, acc_guests)
 tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
 
-print(f"50 guests:  £{tab_cost_avgnight[49]:.2f}")
-print(f"100 guests: £{tab_cost_avgnight[99]:.2f}")
-print(f"200 guests: £{tab_cost_avgnight[199]:.2f}")
-print(f"450 guests: £{tab_cost_avgnight[449]:.2f}")
-print(f"500 guests: £{tab_cost_avgnight[499]:.2f}")
+## min ticket price is set to make exposure == 0, we could adjust so there is some exposure just set to a controllable amount. 
+min_ticket_price_avgnight = tab_cost_avgnight / acc_guests
+min_ticket_price_badnight = tab_cost_badnight / acc_guests
+
+## plot via matplotlib. 
+fig, ax = plt.subplots()
+
+ax.plot(acc_guests, min_ticket_price_avgnight, label='Min ticket price - avg night')
+ax.plot(acc_guests, min_ticket_price_badnight, label='Min ticket price - bad night')
+
+ax.set_xlabel('Number of guests')
+ax.set_ylabel('Ticket Price (£)')
+ax.set_title('Minimum Ticket Price vs Attendance')
+ax.legend()
+
+ax.set_ylim(0,30)
+
+plt.show()
