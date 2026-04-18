@@ -69,7 +69,12 @@ plt.subplots_adjust(bottom=0.05)
 ax_slider_avg_spend = plt.axes([0.2, 0.3, 0.6, 0.03])
 slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10, 20, valinit=AVG_SPEND_PP )
 
+
+annot_avg = None
+annot_bad = None
+
 def update(val):
+    global annot_avg, annot_bad
     ticket_price = slider.val
     min_spend = slider_min_spend.val
     avg_spend = slider_avg_spend.val 
@@ -79,10 +84,27 @@ def update(val):
     net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
     lines[0].set_ydata(net_avgnight)
     lines[1].set_ydata(net_badnight)
+
+    if annot_avg is not None:
+        annot_avg.remove()
+    if annot_bad is not None:
+        annot_bad.remove()
+
+    breakeven_avg_idx = np.where(np.diff(np.sign(net_avgnight)))[0]
+    breakeven_bad_idx = np.where(np.diff(np.sign(net_badnight)))[0]
+
+    if len(breakeven_avg_idx) > 0:
+        x_avg = acc_guests[breakeven_avg_idx[0]]
+        annot_avg = ax.annotate(f'Avg breakeven: {x_avg} guests', (x_avg, 0))
+    if len(breakeven_bad_idx) > 0:
+        x_bad = acc_guests[breakeven_bad_idx[0]]
+        annot_bad = ax.annotate(f'Bad breakeven: {x_bad} guests', (x_bad, 0))
+
     fig.canvas.draw_idle()
 
 slider.on_changed(update)
 slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
+
 
 plt.show()
