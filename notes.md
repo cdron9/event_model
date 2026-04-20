@@ -1,35 +1,68 @@
-*firstly.* 
+# Event Pricing Model
 
-## KEY INFO.
-- £1500 venue cost
-- ticketed event
-- max occupancy: 500 persons 
-- min spend at venue: £6,000
-- exposure to paying the remaining excess of the min spend must be MINIMAL 
+## KEY INFO
+- £1,500 venue cost
+- Ticketed event
+- Max occupancy: 500 persons
+- Minimum spend at venue: £6,000
+- Exposure to paying the remaining excess of the min spend must be MINIMAL
 
+---
 
-## AN ASIDE. 
-Id be happy to build a shitty ticketing platform so you dont have to pay to have one hosted. woudl just be a database i can link to excel or something, stripe for payment and confrmation, and just like event info on the site too. can automate emails going out to attendees also if you want. its all possible, there may be cost in doing that. I dont want any money just in terms of using Stripes API, web hosting, and email domain also. wouldnt be expensive though i dont think. 
-
-## CORE ISSUE.
+## CORE ISSUE
 As attendance drops:
-Ticket revenue falls linearly (fewer people × same price)
-Required min spend per person rises NOT linearly (6000 ÷ attendance = gets steep fast at low numbers)
+- Ticket revenue falls **linearly** (fewer people × same price)
+- Required min spend per person rises **non-linearly** (£6,000 ÷ attendance gets steep fast at low numbers)
 
-## OBSERVATIONS.
-basically using common sense: when i go out, if i spend more on a ticket, i spend less on drinks. 
+---
 
-this idea labelled technically: there is a negative correlation between ticket price and spend per person. 
+## OBSERVATIONS
 
-now, this is complicated to model becasue it not objectively 'garaunteed' just assumed but quite probable. 
-theres basically a compounding risk in this model that isnt currently captured. 
-- higher ticket price -> lower bar spend per person
-- lower bar spend -> higher exposure to bar minimum shortfall
-- higher exposure -> requires compounding ticket price.
-its a nasty circle. kidna like needing experience to get an entry level job. 
+Using common sense: when I go out, if I spend more on a ticket, I spend less on drinks.
 
-### actually having thought about this for 5 mins more. I can model spend per person as a function of ticket price. linear decay would work well just to simply represent this. 
-this represents 'budget substitution' according to my best friend claude. it is the economic concept of two goods competing for the same wallet. cool. 
+Technically: there is a **negative correlation between ticket price and spend per person**.
 
+This is complicated to model because it is not objectively guaranteed — just assumed but quite probable.
 
+There is a compounding risk in this model that isn't immediately obvious:
 
+- Higher ticket price → lower bar spend per person
+- Lower bar spend → higher exposure to bar minimum shortfall
+- Higher exposure → requires compounding ticket price increases to compensate
+
+It's a nasty circle. Kind of like needing experience to get an entry level job.
+
+### Budget Substitution
+Spend per person can be modelled as a function of ticket price using **exponential decay** — this represents the economic concept of **budget substitution**: two goods competing for the same wallet.
+
+At low ticket prices, bar spend is near baseline. As ticket price rises, bar spend decays exponentially. Sensitivity controls the steepness of this decay.
+
+---
+
+## MODEL APPROACH
+
+### Monte Carlo Simulation
+Rather than reading a single breakeven line, the model runs thousands of simulated nights by sampling from probability distributions for both attendance and spend per person. This gives a **probability of breaking even** at any given set of pricing assumptions.
+
+#### Attendance Distribution
+- Normal distribution
+- Central estimate: ~300 guests (60% of max occupancy)
+- Realistic range: 175–450 guests
+- Standard deviation: ~65 guests
+
+#### Spend Per Person Distribution
+- Normal distribution centred on slider baseline values
+- Separate distributions for average and floor spend scenarios
+- Spread TBD — reflects natural variance in how much individuals drink on a given night
+
+#### Sensitivity
+- Controls the steepness of exponential decay in spend per person as ticket price rises
+- Hard to calibrate without real data — accurate modelling would require significant historical data or ML
+- Treated as an adjustable assumption rather than a fixed parameter
+
+---
+
+## LIMITATIONS
+- Decay sensitivity is a best guess — real calibration requires event data
+- Human decision making around spend is inherently unpredictable
+- Model is a planning tool, not a guarantee

@@ -1,14 +1,13 @@
 EVENT MODEL - TODO
 ==================
 
-3. Model negative correlation between ticket price and bar spend
-   - avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
-   - add sensitivity as a slider
-   - see notes on budget substitution in README
-
 4. Add probability distribution for spend per person
    - replace flat avg/floor with a bell curve
    - gives a more realistic spread of outcomes
+
+5. Add probability distribution for attendace per night 
+
+6. Monte carlo
 
 5. Write README
    - document the model logic
