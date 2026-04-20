@@ -20,7 +20,7 @@ min_spend_pp = (MIN_BAR_SPEND / acc_guests)
 ## bad case average spend = (5*6 + 1*12)/10 = £4.20 floor
 AVG_SPEND_PP = 14
 FLOOR_SPEND_PP = 4.20
-SENSITIVITY = 0.5
+SENSITIVITY = 0.05
 
 ## we hit floor at above max attendance (VERY BAD)
 ## we hit avg around 450ish 
@@ -73,21 +73,17 @@ slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 
 ##slider for sensitivity
 plt.subplots_adjust(bottom=0.00)
 ax_slider_sensitivity = plt.axes([0.2, 0.4, 0.6, 0.03])
-slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity', 0.2, 0.8, valinit=SENSITIVITY)
+slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity', 0.01, 0.1, valinit=SENSITIVITY)
 
 
 annot_avg = None
 annot_bad = None
 
-## implement linear decay to simulate basket theory 
-
-## sensutivity for PED (will be a slider for live aadjustments)
-##sensitivity = 1
-##def basket_theory_decay():
-    ## linear decay 
-    ## y = C - mt 
-    ## || avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
-    ##avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
+## oops cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
+## avoiding modelling human decision making because how tf do i do that dynamically. 
+## we need an exponential formula. 
+## e^0 = 1, at £0 ticket price, then exponetnailly decay as exponent increases to 15... 
+#  should likely adjust sensitivty too because large ticket price exponents will get very big very fast. 
 
 def update(val):
     global annot_avg, annot_bad
@@ -95,8 +91,8 @@ def update(val):
     min_spend = slider_min_spend.val
     avg_spend = slider_avg_spend.val 
     sensitivity = slider_sensitivity.val
-    avg_spend_decayed = avg_spend - (sensitivity * ticket_price)
-    min_spend_decayed = min_spend - (sensitivity * ticket_price)
+    avg_spend_decayed = avg_spend * np.exp(-sensitivity * ticket_price)
+    min_spend_decayed = min_spend * np.exp(-sensitivity * ticket_price)
     tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend_decayed, acc_guests)
     tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend_decayed, acc_guests)
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
