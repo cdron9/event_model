@@ -20,6 +20,7 @@ min_spend_pp = (MIN_BAR_SPEND / acc_guests)
 ## bad case average spend = (5*6 + 1*12)/10 = £4.20 floor
 AVG_SPEND_PP = 14
 FLOOR_SPEND_PP = 4.20
+SENSITIVITY = 0.5
 
 ## we hit floor at above max attendance (VERY BAD)
 ## we hit avg around 450ish 
@@ -69,26 +70,55 @@ plt.subplots_adjust(bottom=0.05)
 ax_slider_avg_spend = plt.axes([0.2, 0.3, 0.6, 0.03])
 slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10, 20, valinit=AVG_SPEND_PP )
 
+##slider for sensitivity
+plt.subplots_adjust(bottom=0.00)
+ax_slider_sensitivity = plt.axes([0.2, 0.4, 0.6, 0.03])
+slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity', 0.2, 0.8, valinit=SENSITIVITY)
+
 
 annot_avg = None
 annot_bad = None
+
+## implement linear decay to simulate basket theory 
+
+## sensutivity for PED (will be a slider for live aadjustments)
+##sensitivity = 1
+##def basket_theory_decay():
+    ## linear decay 
+    ## y = C - mt 
+    ## || avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
+    ##avg_spend_pp = AVG_SPEND_PP - (sensitivity * ticket_price)
 
 def update(val):
     global annot_avg, annot_bad
     ticket_price = slider.val
     min_spend = slider_min_spend.val
     avg_spend = slider_avg_spend.val 
-    tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend, acc_guests)
-    tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend, acc_guests)
+    sensitivity = slider_sensitivity.val
+    avg_spend_decayed = avg_spend - (sensitivity * ticket_price)
+    min_spend_decayed = min_spend - (sensitivity * ticket_price)
+    tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend_decayed, acc_guests)
+    tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend_decayed, acc_guests)
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
     net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
     lines[0].set_ydata(net_avgnight)
     lines[1].set_ydata(net_badnight)
 
+## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to glbal
+
     if annot_avg is not None:
-        annot_avg.remove()
+        try:
+            annot_avg.remove()
+        except ValueError:
+            pass
+        annot_avg = None
+
     if annot_bad is not None:
-        annot_bad.remove()
+        try:
+            annot_bad.remove()
+        except ValueError:
+            pass 
+        annot_bad = None
 
     breakeven_avg_idx = np.where(np.diff(np.sign(net_avgnight)))[0]
     breakeven_bad_idx = np.where(np.diff(np.sign(net_badnight)))[0]
@@ -102,9 +132,13 @@ def update(val):
 
     fig.canvas.draw_idle()
 
+    print(avg_spend_decayed)
+    print(min_spend_decayed)
+
 slider.on_changed(update)
 slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
+slider_sensitivity.on_changed(update)
 
 
 plt.show()
