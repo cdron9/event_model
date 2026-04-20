@@ -41,6 +41,7 @@ net_badnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_badnight
 
 ## plot
 fig, ax = plt.subplots()
+plt.subplots_adjust(bottom=0.35)
 
 lines = [
     ax.plot(acc_guests, net_avgnight, label='Net position - avg night')[0],
@@ -54,27 +55,21 @@ ax.set_title('Net Position vs Attendance')
 ax.legend()
 ax.set_ylim(-8000, 8000)
 
-## slider
-plt.subplots_adjust(bottom=0.25)
-ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
-slider = Slider(ax_slider, 'Ticket Price (£)', 1, 30, valinit=TICKET_PRICE)
+## decayed spend display text
+decay_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, verticalalignment='top',
+                     fontsize=9, color='dimgray',
+                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 
-## slider for avg and floor spend 
-## Floor spend 
-plt.subplots_adjust(bottom=0.15)
-ax_slider_min_spend = plt.axes([0.2, 0.2, 0.6, 0.03])
-slider_min_spend = Slider(ax_slider_min_spend, 'Floor Spend Per-Person (£)', 4.50, 10, valinit=FLOOR_SPEND_PP)
+## sliders — stacked at bottom with consistent spacing
+ax_slider          = plt.axes([0.2, 0.25, 0.6, 0.03])
+ax_slider_min_spend    = plt.axes([0.2, 0.20, 0.6, 0.03])
+ax_slider_avg_spend    = plt.axes([0.2, 0.15, 0.6, 0.03])
+ax_slider_sensitivity  = plt.axes([0.2, 0.10, 0.6, 0.03])
 
-## Avg spend
-plt.subplots_adjust(bottom=0.05)
-ax_slider_avg_spend = plt.axes([0.2, 0.3, 0.6, 0.03])
-slider_avg_spend = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10, 20, valinit=AVG_SPEND_PP )
-
-##slider for sensitivity
-plt.subplots_adjust(bottom=0.00)
-ax_slider_sensitivity = plt.axes([0.2, 0.4, 0.6, 0.03])
-slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity', 0.01, 0.1, valinit=SENSITIVITY)
-
+slider             = Slider(ax_slider,           'Ticket Price (£)',              1,    30,   valinit=TICKET_PRICE)
+slider_min_spend   = Slider(ax_slider_min_spend, 'Floor Spend Per-Person (£)',    4.50, 10,   valinit=FLOOR_SPEND_PP)
+slider_avg_spend   = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10,   20,   valinit=AVG_SPEND_PP)
+slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity',                 0.01, 0.1,  valinit=SENSITIVITY)
 
 annot_avg = None
 annot_bad = None
@@ -88,11 +83,13 @@ annot_bad = None
 def update(val):
     global annot_avg, annot_bad
     ticket_price = slider.val
-    min_spend = slider_min_spend.val
-    avg_spend = slider_avg_spend.val 
-    sensitivity = slider_sensitivity.val
+    min_spend    = slider_min_spend.val
+    avg_spend    = slider_avg_spend.val 
+    sensitivity  = slider_sensitivity.val
+
     avg_spend_decayed = avg_spend * np.exp(-sensitivity * ticket_price)
     min_spend_decayed = min_spend * np.exp(-sensitivity * ticket_price)
+
     tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend_decayed, acc_guests)
     tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend_decayed, acc_guests)
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
@@ -100,8 +97,13 @@ def update(val):
     lines[0].set_ydata(net_avgnight)
     lines[1].set_ydata(net_badnight)
 
-## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to glbal
+    ## update decayed spend display
+    decay_text.set_text(
+        f'Decayed avg spend/pp: £{avg_spend_decayed:.2f}\n'
+        f'Decayed floor spend/pp: £{min_spend_decayed:.2f}'
+    )
 
+    ## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to glbal
     if annot_avg is not None:
         try:
             annot_avg.remove()
@@ -136,5 +138,6 @@ slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
 slider_sensitivity.on_changed(update)
 
+update(None)
 
 plt.show()
