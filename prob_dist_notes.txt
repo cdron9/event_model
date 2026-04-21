@@ -1,0 +1,22 @@
+PROBABILITY DISTRIBUTIONS 
+
+essential component of statistical analysis
+
+there are a few different probability distributions each with different applications 
+
+- normal distributions 
+    bell shaped for continous data such as height, weight, test scores
+- binomial distributions 
+    decribes the number of successes in a fixed number of independant trials such as number of heads in 10 coin flips
+- poisson distributions
+    decribes the numner of rare events that occur within a fixed interval of time or space. such as number of car accidents in a day
+- exponential distributions
+    desciribes the time between two consecutive events in a Poisson process, such as time between arrivals at a service center. 
+
+    
+a Poisson process is a stochastic process that models the number of discrete events occuring independently within a continous interval (usually time or space) at a constant average rate
+
+
+For the instance of this particular project - normal distribution works fine, but we could also model with binomial distribution, the output data will just be different. 
+
+
