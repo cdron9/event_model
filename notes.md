@@ -37,6 +37,13 @@ Spend per person can be modelled as a function of ticket price using **exponenti
 
 At low ticket prices, bar spend is near baseline. As ticket price rises, bar spend decays exponentially. Sensitivity controls the steepness of this decay.
 
+### Price Elasticity of Demand (PED)
+The exponential decay modelling budget substitution is formally an expression of **PED** — 
+how demand for bar spend changes relative to a change in ticket price. 
+The sensitivity slider is therefore an elasticity coefficient. 
+A value of 0.05 implies a 5% decay in bar spend per £1 increase in ticket price.
+Without historical data, sensitivity remains an estimated parameter.
+
 ---
 
 ## MODEL APPROACH

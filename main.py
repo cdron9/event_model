@@ -1,47 +1,20 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt 
-from matplotlib.widgets import Slider
+from model import (acc_guests, MIN_BAR_SPEND, VENUE_COST,
+                   AVG_SPEND_PP, FLOOR_SPEND_PP, TICKET_PRICE,
+                   exposure, ped_decay)
+from sliders import create_sliders
 
-MAX_GUESTS = 500 
-MIN_BAR_SPEND = 6000
-VENUE_COST = 1500
+## ─── PLOT SETUP ──────────────────────────────────────────────────────────────
 
-## guest variables
-acc_guests = np.arange(1, 501) 
-min_spend_pp = (MIN_BAR_SPEND / acc_guests)
-
-## drink variables 
-## three groups: non drinkers, average drinkers, heavy drinkers 
-## bell curve for distribution is most realistic. 
-## 2 non drinkers, 6 average drinkers, 2 heavy drinkers. 
-## £6 for beer, £8 for cocktail, avg drink = £7 
-## realistic average spend = (6*14 + 2*28)/10 = £14 per person
-## bad case: 4 non drinkers, 5 light drinkers, 1 heavy
-## bad case average spend = (5*6 + 1*12)/10 = £4.20 floor
-AVG_SPEND_PP = 14
-FLOOR_SPEND_PP = 4.20
-SENSITIVITY = 0.05
-
-## we hit floor at above max attendance (VERY BAD)
-## we hit avg around 450ish 
-
-def exposure(min_bar_spend, avg_spend_pp, acc_guests):
-    exposure = np.maximum(0, min_bar_spend - (avg_spend_pp * acc_guests))
-    return exposure
+fig, ax = plt.subplots()
+plt.subplots_adjust(bottom=0.35)
 
 tab_cost_avgnight = exposure(MIN_BAR_SPEND, AVG_SPEND_PP, acc_guests)
 tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
 
-## net position = ticket revenue - venue cost - bar exposure
-## target is net >= 0, no profit needed
-TICKET_PRICE = 15
-
 net_avgnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_avgnight
 net_badnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_badnight
-
-## plot
-fig, ax = plt.subplots()
-plt.subplots_adjust(bottom=0.35)
 
 lines = [
     ax.plot(acc_guests, net_avgnight, label='Net position - avg night')[0],
@@ -55,55 +28,54 @@ ax.set_title('Net Position vs Attendance')
 ax.legend()
 ax.set_ylim(-8000, 8000)
 
-## decayed spend display text
+## live decayed spend display
 decay_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, verticalalignment='top',
                      fontsize=9, color='dimgray',
                      bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 
-## sliders — stacked at bottom with consistent spacing
-ax_slider          = plt.axes([0.2, 0.25, 0.6, 0.03])
-ax_slider_min_spend    = plt.axes([0.2, 0.20, 0.6, 0.03])
-ax_slider_avg_spend    = plt.axes([0.2, 0.15, 0.6, 0.03])
-ax_slider_sensitivity  = plt.axes([0.2, 0.10, 0.6, 0.03])
+## ─── SLIDERS ─────────────────────────────────────────────────────────────────
 
-slider             = Slider(ax_slider,           'Ticket Price (£)',              1,    30,   valinit=TICKET_PRICE)
-slider_min_spend   = Slider(ax_slider_min_spend, 'Floor Spend Per-Person (£)',    4.50, 10,   valinit=FLOOR_SPEND_PP)
-slider_avg_spend   = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10,   20,   valinit=AVG_SPEND_PP)
-slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity',                 0.01, 0.1,  valinit=SENSITIVITY)
+slider, slider_min_spend, slider_avg_spend, slider_sensitivity = create_sliders()
+
+## ─── STATE ───────────────────────────────────────────────────────────────────
 
 annot_avg = None
 annot_bad = None
 
-## oops cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
+## ─── UPDATE FUNCTION ─────────────────────────────────────────────────────────
+
+## cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
 ## avoiding modelling human decision making because how tf do i do that dynamically. 
 ## we need an exponential formula. 
-## e^0 = 1, at £0 ticket price, then exponetnailly decay as exponent increases to 15... 
-#  should likely adjust sensitivty too because large ticket price exponents will get very big very fast. 
+## e^0 = 1, at £0 ticket price, then exponentially decay as exponent increases...
+## PED: sensitivity is the elasticity coefficient. decay = baseline * e^(-sensitivity * ticket_price)
 
 def update(val):
     global annot_avg, annot_bad
+
     ticket_price = slider.val
     min_spend    = slider_min_spend.val
     avg_spend    = slider_avg_spend.val 
     sensitivity  = slider_sensitivity.val
 
-    avg_spend_decayed = avg_spend * np.exp(-sensitivity * ticket_price)
-    min_spend_decayed = min_spend * np.exp(-sensitivity * ticket_price)
+    avg_spend_decayed = ped_decay(avg_spend, sensitivity, ticket_price)
+    min_spend_decayed = ped_decay(min_spend, sensitivity, ticket_price)
 
     tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend_decayed, acc_guests)
     tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend_decayed, acc_guests)
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
     net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
+
     lines[0].set_ydata(net_avgnight)
     lines[1].set_ydata(net_badnight)
 
-    ## update decayed spend display
     decay_text.set_text(
-        f'Decayed avg spend/pp: £{avg_spend_decayed:.2f}\n'
+        f'Decayed avg spend/pp:   £{avg_spend_decayed:.2f}\n'
         f'Decayed floor spend/pp: £{min_spend_decayed:.2f}'
     )
 
-    ## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to glbal
+    ## use try/except to avoid matplotlib crash on annotation removal
+    ## must reset to None after remove to avoid stale reference on next call
     if annot_avg is not None:
         try:
             annot_avg.remove()
@@ -133,11 +105,12 @@ def update(val):
     print(avg_spend_decayed)
     print(min_spend_decayed)
 
+## ─── CONNECT & RUN ───────────────────────────────────────────────────────────
+
 slider.on_changed(update)
 slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
 slider_sensitivity.on_changed(update)
 
 update(None)
-
 plt.show()
