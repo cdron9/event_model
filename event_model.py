@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from matplotlib.widgets import Slider
 
+
+## -------- CONSTANTS ---------
+
 MAX_GUESTS = 500 
 MIN_BAR_SPEND = 6000
 VENUE_COST = 1500
@@ -22,8 +25,7 @@ AVG_SPEND_PP = 14
 FLOOR_SPEND_PP = 4.20
 SENSITIVITY = 0.05
 
-## we hit floor at above max attendance (VERY BAD)
-## we hit avg around 450ish 
+## ----------------------------------------------------------
 
 def exposure(min_bar_spend, avg_spend_pp, acc_guests):
     exposure = np.maximum(0, min_bar_spend - (avg_spend_pp * acc_guests))
@@ -74,7 +76,7 @@ slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity',               
 annot_avg = None
 annot_bad = None
 
-## oops cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
+## cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
 ## avoiding modelling human decision making because how tf do i do that dynamically. 
 ## we need an exponential formula. 
 ## e^0 = 1, at £0 ticket price, then exponetnailly decay as exponent increases to 15... 
@@ -92,6 +94,7 @@ def update(val):
 
     tab_cost_avgnight = exposure(MIN_BAR_SPEND, avg_spend_decayed, acc_guests)
     tab_cost_badnight = exposure(MIN_BAR_SPEND, min_spend_decayed, acc_guests)
+
     net_avgnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_avgnight
     net_badnight = (ticket_price * acc_guests) - VENUE_COST - tab_cost_badnight
     lines[0].set_ydata(net_avgnight)
@@ -133,6 +136,8 @@ def update(val):
     print(avg_spend_decayed)
     print(min_spend_decayed)
 
+## --------- UPDATE ----------- 
+ 
 slider.on_changed(update)
 slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
