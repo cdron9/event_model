@@ -139,7 +139,7 @@ def update(val):
     ## att_mean and att_std fixed — can be made into sliders later
     risk = calculate_risk(ticket_price, sensitivity,
                           att_mean=300, att_std=65,
-                          spend_mean=avg_spend, spend_std=3)
+                          spend_mean=14, spend_std=6)
 
     ## update decayed spend display
     decay_text.set_text(
