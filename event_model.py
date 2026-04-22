@@ -1,16 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 from matplotlib.widgets import Slider
-
+from scipy.stats import norm
 
 ## -------- CONSTANTS ---------
 
-MAX_GUESTS = 500 
+MAX_GUESTS    = 500 
 MIN_BAR_SPEND = 6000
-VENUE_COST = 1500
+VENUE_COST    = 1500
 
 ## guest variables
-acc_guests = np.arange(1, 501) 
+acc_guests   = np.arange(1, 501) 
 min_spend_pp = (MIN_BAR_SPEND / acc_guests)
 
 ## drink variables 
@@ -21,15 +21,17 @@ min_spend_pp = (MIN_BAR_SPEND / acc_guests)
 ## realistic average spend = (6*14 + 2*28)/10 = £14 per person
 ## bad case: 4 non drinkers, 5 light drinkers, 1 heavy
 ## bad case average spend = (5*6 + 1*12)/10 = £4.20 floor
-AVG_SPEND_PP = 14
+AVG_SPEND_PP   = 14
 FLOOR_SPEND_PP = 4.20
-SENSITIVITY = 0.05
+SENSITIVITY    = 0.05
 
-## ----------------------------------------------------------
+## -------- CORE FUNCTIONS ---------
 
 def exposure(min_bar_spend, avg_spend_pp, acc_guests):
     exposure = np.maximum(0, min_bar_spend - (avg_spend_pp * acc_guests))
     return exposure
+
+## -------- INITIAL CALCULATIONS ---------
 
 tab_cost_avgnight = exposure(MIN_BAR_SPEND, AVG_SPEND_PP, acc_guests)
 tab_cost_badnight = exposure(MIN_BAR_SPEND, FLOOR_SPEND_PP, acc_guests)
@@ -41,7 +43,8 @@ TICKET_PRICE = 15
 net_avgnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_avgnight
 net_badnight = (TICKET_PRICE * acc_guests) - VENUE_COST - tab_cost_badnight
 
-## plot
+## -------- PLOT SETUP ---------
+
 fig, ax = plt.subplots()
 plt.subplots_adjust(bottom=0.35)
 
@@ -62,25 +65,56 @@ decay_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, verticalalignment='
                      fontsize=9, color='dimgray',
                      bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 
+## -------- SLIDERS ---------
 ## sliders — stacked at bottom with consistent spacing
-ax_slider          = plt.axes([0.2, 0.25, 0.6, 0.03])
-ax_slider_min_spend    = plt.axes([0.2, 0.20, 0.6, 0.03])
-ax_slider_avg_spend    = plt.axes([0.2, 0.15, 0.6, 0.03])
-ax_slider_sensitivity  = plt.axes([0.2, 0.10, 0.6, 0.03])
 
-slider             = Slider(ax_slider,           'Ticket Price (£)',              1,    30,   valinit=TICKET_PRICE)
-slider_min_spend   = Slider(ax_slider_min_spend, 'Floor Spend Per-Person (£)',    4.50, 10,   valinit=FLOOR_SPEND_PP)
-slider_avg_spend   = Slider(ax_slider_avg_spend, 'Average Spend Per-Person (£)', 10,   20,   valinit=AVG_SPEND_PP)
-slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity',                 0.01, 0.1,  valinit=SENSITIVITY)
+ax_slider             = plt.axes([0.2, 0.25, 0.6, 0.03])
+ax_slider_min_spend   = plt.axes([0.2, 0.20, 0.6, 0.03])
+ax_slider_avg_spend   = plt.axes([0.2, 0.15, 0.6, 0.03])
+ax_slider_sensitivity = plt.axes([0.2, 0.10, 0.6, 0.03])
+
+slider             = Slider(ax_slider,             'Ticket Price (£)',             1,    30,  valinit=TICKET_PRICE)
+slider_min_spend   = Slider(ax_slider_min_spend,   'Floor Spend Per-Person (£)',   4.50, 10,  valinit=FLOOR_SPEND_PP)
+slider_avg_spend   = Slider(ax_slider_avg_spend,   'Average Spend Per-Person (£)', 10,   20,  valinit=AVG_SPEND_PP)
+slider_sensitivity = Slider(ax_slider_sensitivity, 'Sensitivity (PED)',            0.01, 0.1, valinit=SENSITIVITY)
 
 annot_avg = None
 annot_bad = None
 
+## -------- DECAY ---------
 ## cant use linear decay. if ticket price is low bar spend must assymetrically - to the decay - inflate due to basket theory. 
 ## avoiding modelling human decision making because how tf do i do that dynamically. 
 ## we need an exponential formula. 
 ## e^0 = 1, at £0 ticket price, then exponetnailly decay as exponent increases to 15... 
-#  should likely adjust sensitivty too because large ticket price exponents will get very big very fast. 
+## PED: sensitivity is the elasticity coefficient. decay = baseline * e^(-sensitivity * ticket_price)
+
+## -------- RISK CALCULATION ---------
+## define shape of uncertainty for both attendance and spend
+## attendance: normal distribution, mean ~300 (60% of 500), std ~65, range 175-450
+## spend: normal distribution centred on slider baseline
+
+def calculate_risk(ticket_price, sensitivity, att_mean, att_std, spend_mean, spend_std):
+    ## 10,000 nights
+    num_samples = 10000
+
+    ## generate random nights and clip attendance to min and max
+    sim_attendance = norm.rvs(loc=att_mean, scale=att_std, size=num_samples)
+    sim_spend      = norm.rvs(loc=spend_mean, scale=spend_std, size=num_samples)
+    sim_attendance = np.clip(sim_attendance, 0, 500)
+
+    ## apply PED decay to sim spend
+    decayed_sim_spend = sim_spend * np.exp(-sensitivity * ticket_price)
+
+    ## get simulated exposure (same logic as exposure function)
+    sim_exposure = np.maximum(0, MIN_BAR_SPEND - (decayed_sim_spend * sim_attendance))
+
+    ## get simulated net position
+    sim_net_pos = (ticket_price * sim_attendance) - VENUE_COST - sim_exposure
+
+    risk_of_loss = np.sum(sim_net_pos < 0) / num_samples
+    return risk_of_loss * 100 ## return as percentage
+
+## -------- UPDATE ---------
 
 def update(val):
     global annot_avg, annot_bad
@@ -100,13 +134,22 @@ def update(val):
     lines[0].set_ydata(net_avgnight)
     lines[1].set_ydata(net_badnight)
 
+    ## run risk simulation with current slider values
+    ## avg_spend used as spend mean so it responds to slider
+    ## att_mean and att_std fixed — can be made into sliders later
+    risk = calculate_risk(ticket_price, sensitivity,
+                          att_mean=300, att_std=65,
+                          spend_mean=avg_spend, spend_std=3)
+
     ## update decayed spend display
     decay_text.set_text(
-        f'Decayed avg spend/pp: £{avg_spend_decayed:.2f}\n'
-        f'Decayed floor spend/pp: £{min_spend_decayed:.2f}'
+        f'Decayed avg spend/pp:   £{avg_spend_decayed:.2f}\n'
+        f'Decayed floor spend/pp: £{min_spend_decayed:.2f}\n'
+        f'─────────────────────────\n'
+        f'Risk of loss:           {risk:.1f}%'
     )
 
-    ## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to glbal
+    ## use try and except to avoid breaking matplot - need to remember to set annot back to None to avoid crashing due to global
     if annot_avg is not None:
         try:
             annot_avg.remove()
@@ -133,16 +176,12 @@ def update(val):
 
     fig.canvas.draw_idle()
 
-    print(avg_spend_decayed)
-    print(min_spend_decayed)
+## -------- CONNECT & RUN ---------
 
-## --------- UPDATE ----------- 
- 
 slider.on_changed(update)
 slider_min_spend.on_changed(update)
 slider_avg_spend.on_changed(update)
 slider_sensitivity.on_changed(update)
 
 update(None)
-
 plt.show()

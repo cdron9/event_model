@@ -67,9 +67,17 @@ Rather than reading a single breakeven line, the model runs thousands of simulat
 - Hard to calibrate without real data — accurate modelling would require significant historical data or ML
 - Treated as an adjustable assumption rather than a fixed parameter
 
+#### Risk of Loss calc
+- Net pos depends on two 'random' variables.
+- our 'risk of loss' is the probability that the combination of these two results in value < 0
+
 ---
 
 ## LIMITATIONS
 - Decay sensitivity is a best guess — real calibration requires event data
 - Human decision making around spend is inherently unpredictable
 - Model is a planning tool, not a guarantee
+
+## OTHER QUESTIONS (could potentially model in the future)
+- Does higher attendance lead to lower spend per person (long queues at the bar)?
+- Does a high ticket price lead to lower attendance?
